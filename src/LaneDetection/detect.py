@@ -13,11 +13,10 @@ class LaneDetection:
     This class implements the lane detection algorithm by detecting lane lines in an input image using computer vision techniques.
     """
 
-    def __init__(self, width, height, var_handler):
+    def __init__(self, width, height, camera):
 
         self.height = height
         self.width = width
-        self.var = var_handler
 
         self.config = configparser.ConfigParser()
         self.config.read("config.ini")
@@ -63,9 +62,9 @@ class LaneDetection:
         self.weight_for_width_distance = float(self.config["LANE_DETECT"].get("weight_for_width_distance"))
         self.weight_for_expected_value_distance = float(self.config["LANE_DETECT"].get("weight_for_expected_value_distance"))
 
-        if self.var.get_lanes_det_cam() == "455":
+        if camera == "455":
             self.choose_455()
-        elif self.var.get_lanes_det_cam() == "405":
+        elif camera == "405":
             self.choose_405()
         else :
             print(">>>>> UNABLE TO SELECT CAMERA !!!")

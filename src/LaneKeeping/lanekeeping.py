@@ -42,19 +42,17 @@ class LaneKeeping:
             Height of the last histogram
     """
 
-    def __init__(self, width, height, logger, var_handler):
+    def __init__(self, width, height, logger, camera):
 
         self.width = width
         self.height = height
         self.log = logger
-        self.var = var_handler
 
         self.angle = 0.0
         self.last_angle = 0.0
 
         self.config = configparser.ConfigParser()
         self.config.read("config.ini")
-        self.speedrun = self.config["SPEED"].getboolean("speedrun")
 
         # Rolling average parameters
         self.steer_value_list = list()
@@ -70,9 +68,9 @@ class LaneKeeping:
         self.slices = int(self.config["LANE_DETECT"].get("slices"))
         self.bottom_offset = int(self.config["LANE_DETECT"].get("bottom_offset"))
 
-        if self.var.get_lanes_det_cam() == "455":
+        if camera == "455":
             self.choose_455()
-        elif self.var.get_lanes_det_cam() == "405":
+        elif camera == "405":
             self.choose_405()
 
         self.prev_mean_right = 0
@@ -258,8 +256,7 @@ class LaneKeeping:
             smooth_lane = ((self.width // 2) - desire_lane) * (self.sf)
             desire_lane += smooth_lane
         elif self.change_lane_stage_2:
-            overtake_type = self.var.get_overtake_type()
-            dif_from_mid = (self.width // 2 - desire_lane[0]) * self.change_lane_mid[overtake_type]
+            dif_from_mid = (self.width // 2 - desire_lane[0]) * self.change_lane_mid[self.overtake_type]
             desire_lane += dif_from_mid
 
         return desire_lane.astype(np.int32)
@@ -314,9 +311,10 @@ class LaneKeeping:
         return 0
 
     # ------------------------------------------------------------------------------#
-    def change_lane_maneuver(self, lanes_detection, direction, smoothing_iterations=None):
+    def change_lane_maneuver(self, lanes_detection, direction, overtake_type, smoothing_iterations=None):
 
         destination = {"right": 1, "left": -1}
+        self.overtake_type = overtake_type
 
         if smoothing_iterations and smoothing_iterations < self.max_smoothing_iterations:
             self.smoothing_iterations = smoothing_iterations
@@ -449,7 +447,6 @@ class LaneKeeping:
 
                 self.reset_change_lane_params()
                 self.angle, frame = self.lane_keeping(lanes_detection)
-                self.var.set_lane_change_completed(True)
                 self.log.debug(
                     "\n\n\n\n>>>> Unable to change lanes - correct lane did not detected.\n\n\n\n"
                 )
@@ -474,7 +471,6 @@ class LaneKeeping:
             # if we are on stage 2 for the required frames (change params for next run and exit)
             if self.count >= count:
                 self.reset_change_lane_params()
-                self.var.set_lane_change_completed(True)
                 self.log.debug(">>>> Lane change completed successfully.\n")
             else:
                 self.count += 1
@@ -490,6 +486,7 @@ class LaneKeeping:
     def reset_change_lane_params(self):
         self.turn_left = False
         self.turn_right = False
+        self.overtake_type = None
         self.count = 0
         self.change_lane_stage_1 = True
         self.change_lane_stage_2 = False
@@ -591,30 +588,22 @@ class LaneKeeping:
         right_coef = lanes_detection["right_coef"]
 
         if self.turn_left:
-            self.angle, frame = self.change_lane_maneuver(lanes_detection, direction="left")
+            self.angle, frame = self.change_lane_maneuver(lanes_detection, direction="left", overtake_type=self.overtake_type)
 
         elif self.turn_right:
-            self.angle, frame = self.change_lane_maneuver(lanes_detection, direction="right")
+            self.angle, frame = self.change_lane_maneuver(lanes_detection, direction="right", overtake_type=self.overtake_type)
 
         else:
 
-            if self.var.get_intersection_started() and not self.var.get_intersection_takeover():
-                # if left_coef is not None and right_coef is not None:
-                if self.var.get_post_roadblock_lane() == "left" or self.var.get_bamby_started():
-                    left_coef = None
-                else:
-                    right_coef = None
-            else:
-                trust_left = lanes_detection["trust_left"]
-                trust_right = lanes_detection["trust_right"]
+            trust_left = lanes_detection["trust_left"]
+            trust_right = lanes_detection["trust_right"]
 
-                left_coef = left_coef if trust_left else None
-                right_coef = right_coef if trust_right else None
+            left_coef = left_coef if trust_left else None
+            right_coef = right_coef if trust_right else None
 
             self.angle, error, frame = self.pid_controller(left_coef, right_coef, frame)
 
-            if not self.speedrun:
-                self.fix_angle()
+            self.fix_angle()
             self.last_angle = self.angle
 
         self.angle = max(min(self.max_lk_steer, self.angle), -self.max_lk_steer)
