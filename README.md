@@ -74,7 +74,7 @@ The idea of the lane detection is to create slices at different heights, for eac
     1. Points Detection method. <br/>
         The idea here is that the lane points in the slice are like squared pulses.
 
-        ![Slice values](/image_repository/slice_visualization.jpg)
+        ![Slice values](/image_repository/histogram_values.jpg)
     
         <!-- TODO: Histogram function implementation -->
 
@@ -88,7 +88,7 @@ The idea of the lane detection is to create slices at different heights, for eac
 
         ![points clustering vis](/gifs/clustering_visualization.gif)
 
-        
+    
     
 2. Choose the correct left and right lane. 
 
