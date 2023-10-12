@@ -71,9 +71,24 @@ The idea of the lane detection is to create slices at different heights, for eac
 Τhe lane detection method performes the following on a given frame : <br/>
 1. Find the lane points and clusters them into lanes by using the 'peaks_detection' function. <br/>
     For each slice we run : 
-    1. Points Detection method.
-     
-    2. ..
+    1. Points Detection method. <br/>
+        The idea here is that the lane points in the slice are like squared pulses.
+
+        ![Slice values](/image_repository/slice_visualization.jpg)
+    
+        <!-- TODO: Histogram function implementation -->
+
+        If we only run the point detection algorithm (without clustering) the result would be : 
+
+        ![points detection vis](/gifs/slices_point_detection_visualization.gif)
+    
+
+    2. Cluster points into different lanes. <br/>
+        After each detection we cluster the new detected points into lanes.
+
+        ![points clustering vis](/gifs/clustering_visualization.gif)
+
+        
     
 2. Choose the correct left and right lane. 
 
