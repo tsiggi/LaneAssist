@@ -16,6 +16,7 @@ The competition invites bachelor and master student teams every year to develop 
     - [Usage](#usage)
     - [Configuration](#configurations)
     - [How it Works](#how-it-works)
+- [Real world Results](#real-road-scenarios)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -134,3 +135,17 @@ The idea of the lane detection is to create slices at different heights, for eac
 # Lane Keeping
 This class main focus is to create a desired lane that the car should follow and calculate a steering angle. 
 ...
+
+# Real Road Scenarios
+
+Explore real-world examples below to see the potential of this solution. By fine-tuning the parameters or making specific adjustments, you can achieve exceptional results. 
+Experiment with the following parameters to optimize outcomes for your unique use cases.
+```
+square_pulses_min_height
+square_pulses_pix_dif
+square_pulses_min_height_dif
+```
+
+![Halkidiki no lights](/gifs/real_world_halkidiki_no_lights.gif) 
+
+![Petrou levanti road](/gifs/real_world_petrou_levanti_panorama.gif)
