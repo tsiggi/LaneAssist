@@ -24,8 +24,6 @@ class LaneDetection:
         self.custom_find_peaks = self.config["LANE_DETECT"].getboolean("custom_find_peaks")
 
         self.slices = int(self.config["LANE_DETECT"].get("slices"))
-        self.stdev_filtering = float(self.config["LANE_DETECT"].get("stdev_filtering"))
-        self.peaks_plateau = int(self.config["LANE_DETECT"].get("peaks_plateau"))
         self.print_lanes = self.config["LANE_DETECT"].getboolean("print_lanes")
         self.print_peaks = self.config["LANE_DETECT"].getboolean("print_peaks")
         self.print_lane_certainty = self.config["LANE_DETECT"].getboolean("print_lane_certainty")
@@ -36,7 +34,6 @@ class LaneDetection:
         self.max_lane_dist_perc = float(self.config["LANE_DETECT"].get("max_lane_dist_perc"))
         self.allowed_certainty_perc_dif = float(self.config["LANE_DETECT"].get("allowed_certainty_perc_dif"))
         self.certainty_perc_from_peaks = float(self.config["LANE_DETECT"].get("certainty_perc_from_peaks"))
-        self.peak_min_intensity = int(self.config["LANE_DETECT"].get("peak_min_intensity"))
         self.min_peaks_for_lane = int(self.config["LANE_DETECT"].get("min_peaks_for_lane"))
 
         self.extreme_coef_second_deg = float(self.config["LANE_DETECT"].get("extreme_coef_second_deg"))
