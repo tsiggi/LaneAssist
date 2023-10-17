@@ -60,7 +60,31 @@ The `LaneDetection` class uses a configuration file (`config.ini`) to set the pa
 
 Below are the most important parameters that may need to be adjusted:
 ```
-...
+# LANE_DETECTION
+slices # (int) the number of histograms to search for lane points
+botom_offset # (int) height in pixels of first slice: (height - bottom_offset)
+botom_perc # (int) height in percentage of last slice: (height - height*bottom_perc)
+peaks_min_width # (int) the min duration of a peak (lane point) (must be less than the value of a lanes point at the last slice).
+peaks_max_width # (int) the maximum duration of a peak (lane point) (max than the one at the first slice).
+max_allowed_width_perc # (float) checks if a point is near a lane. Used in lane clustering.
+min_peaks_for_lane # (int) minimum number of points that a lane must have.
+optimal_peak_perc # (float) percentage of slices = number of points that a lane must have inorder to be considered as right or left.
+allowed_certainty_perc_dif # (float) keeps only one lane if certainty difference is greater than this param.
+
+# SQUARE PULSES AT HISTOGRAM ARE LANE POINTS
+square_pulses_min_height # (int) minimum grayscaled value of a pixel that must have to be part of a lane point. 
+square_pulses_min_height_dif # (int) MIN HEIGHT OF THE SQUARE PULSE. When 2 pixels difference exceed this value then a peak (lane point) has started. 
+square_pulses_pix_dif # (int) the distance of those 2 pixels.
+square_pulses_allowed_peaks_width_error # (int) used to calculate the upper threshold of the width of a 'square pulse'.
+
+# HORIZONTAL LINE
+TODO
+
+# LANE_KEEPING
+bottom_width # (int) half of the distance at the bottom between the 2 lanes. 
+top_width # (int) same but for the top distance.
+
+TODO : change those params dynamicly.
 ```
 
 
@@ -69,10 +93,15 @@ Below are the most important parameters that may need to be adjusted:
 The idea of the lane detection is to create slices at different heights, for each slice first search for lane points and then cluster the detected points into lanes.
 
 Τhe lane detection method performes the following on a given frame : <br/>
-1. Find the lane points and clusters them into lanes by using the 'peaks_detection' function. <br/>
+1. Find the lane points and clusters them into lanes by using the 'peaks_detection' function. 
+    <br/>
+    <details>
+    <summary>More information</summary>
+    </br>
     For each slice we run : 
+
     1. Points Detection method. <br/>
-        The idea here is that the lane points in the slice are like squared pulses.
+        The idea here is that the lane points in a histogram (slice) are like "squared pulses".
 
         ![Slice values](/image_repository/histogram_values.jpg)
     
@@ -81,12 +110,15 @@ The idea of the lane detection is to create slices at different heights, for eac
         If we only run the point detection algorithm (without clustering) the result would be : 
 
         ![points detection vis](/gifs/slices_point_detection_visualization.gif)
-    
-
+   
     2. Cluster points into different lanes. <br/>
         After each detection we cluster the new detected points into lanes.
 
         ![points clustering vis](/gifs/clustering_visualization.gif)
+    
+    </details>
+    
+    </br>
 
     
     
