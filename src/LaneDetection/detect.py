@@ -59,6 +59,8 @@ class LaneDetection:
         self.weight_for_width_distance = float(self.config["LANE_DETECT"].get("weight_for_width_distance"))
         self.weight_for_expected_value_distance = float(self.config["LANE_DETECT"].get("weight_for_expected_value_distance"))
 
+        self.hor_step_by_step = True
+
         if camera == "455":
             self.choose_455()
         elif camera == "405":
@@ -187,6 +189,227 @@ class LaneDetection:
 
         return lane_det_results
 
+    # ------------------------------- HORIZONTAL ----------------------------------- #
+
+    def visualize_horizontal_line(self, frame, detected_line_segment, line):
+        if detected_line_segment : 
+            frame = cv2.line(frame, detected_line_segment[0], detected_line_segment[1], (143,188,143), thickness=5)
+
+            # w1 = detected_line_segment[0][0]
+            # w2 = detected_line_segment[1][0]
+            # h1 = int(line["slope"] * w1 + line["intercept"])
+            # h2 = int(line["slope"] * w2 + line["intercept"])
+
+            # frame = cv2.line(frame, (w1,h1), (w2,h2), (150,150,150), thickness=3)
+
+    def horizontal_detection(self, frame, max_allowed_slope=0.25):
+        
+        main_point, line = self.detect_main_point(frame, max_allowed_slope)
+
+        detected_line_segment = self.detect_lane_line_endpoints(frame, main_point, line, max_allowed_slope)
+    
+        hor_min_width_dist = 0.2 * self.width
+        hor_exists = detected_line_segment and (detected_line_segment[1][0] - detected_line_segment[0][0]) > hor_min_width_dist
+
+        return detected_line_segment, line, hor_exists
+
+    def detect_main_point(self, frame, max_allowed_slope):
+        
+        src = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        max_iterations = 3
+
+        region_of_interest_perc = 0.4
+
+        start_of_ROI_perc = (1 - region_of_interest_perc)/2
+        end_of_ROI_perc = 1 - start_of_ROI_perc
+        width_start = int(self.width * start_of_ROI_perc)
+        width_end = int(self.width * end_of_ROI_perc)
+
+        top_height_perc = 0.5
+        bot_height_perc = 0.95
+        
+        height_start = int(top_height_perc * self.height)
+        height_end = int(bot_height_perc * self.height)
+        
+        main_point = None
+        line = None
+
+        for iterations in range(1, max_iterations):
+
+            num_slices = 2**iterations + 1
+
+            widths_of_slices = np.linspace(width_start, width_end, num_slices)
+
+            # keep odd positions (indices), others (even pos) have been checked or does not matter
+            widths_of_slices = widths_of_slices[1::2]
+
+            for slice_width in widths_of_slices:
+                slice_width = int(slice_width)
+
+                tmp = [src[h][slice_width] for h in range(height_start, height_end)]
+            
+                ps = self.find_lane_peaks(
+                    slice=tmp,
+                    height_norm=0,
+                    min_height=self.square_pulses_min_height,
+                    min_height_dif=self.square_pulses_min_height_dif,
+                    pix_dif=self.square_pulses_pix_dif,
+                    allowed_peaks_width_error=self.square_pulses_allowed_peaks_width_error,
+                )
+
+                for point in ps:
+                    
+                    base_point = {"height": point + height_start, "width":slice_width}
+                    point_l = self.search_for_near_point(frame, gray_frame=src, base_point=base_point, max_allowed_slope=max_allowed_slope, diraction="left", width_step_perc=0.015)
+                    point_r = self.search_for_near_point(frame, gray_frame=src, base_point=base_point, max_allowed_slope=max_allowed_slope, diraction="right", width_step_perc=0.015)
+
+                    num_of_slopes = 1
+                    
+                    # x = width, y = height
+                    if point_l is not None and point_r is not None:
+                        slope_l = (base_point["height"] - point_l["height"]) / (base_point["width"] - point_l["width"])
+                        slope_r = (base_point["height"] - point_r["height"]) / (base_point["width"] - point_r["width"])
+                        slope = (slope_l + slope_r)/2
+                        num_of_slopes = 2
+                    elif point_l is not None:
+                        slope = (base_point["height"] - point_l["height"]) / (base_point["width"] - point_l["width"])
+                    elif point_r :
+                        slope = (base_point["height"] - point_r["height"]) / (base_point["width"] - point_r["width"])
+                    else :
+                        continue
+                    
+                    if abs(slope) > max_allowed_slope :
+                        if self.hor_step_by_step:
+                            cv2.circle(frame, (base_point["width"], base_point["height"]), 2, (0,255,0), 2)
+                        continue
+
+                    if not line or (line and num_of_slopes > line["num_of_slopes"]) or (line and num_of_slopes == line["num_of_slopes"] and abs(line['slope']) > abs(slope) ) :
+                        intercept = base_point["height"] - slope * base_point["width"]
+                        
+                        line = {"slope": slope, "intercept": intercept, "num_of_slopes": num_of_slopes}
+                    
+                        main_point = base_point.copy()
+
+                    if self.hor_step_by_step:
+                        cv2.circle(frame, (base_point["width"], base_point["height"]), 2, (0,0,0), 2)
+
+                if self.hor_step_by_step :
+                    frame = cv2.line(frame,(slice_width, height_start),(slice_width, height_end),(60,20,220))
+
+                    # cv2.imshow('hor2', frame)
+                    # cv2.waitKey(0)
+
+            if main_point :
+                return main_point, line
+        
+        return None, None
+
+    def detect_lane_line_endpoints(self, frame, main_point, line, max_allowed_slope):
+        
+        if not main_point : 
+            return None
+        
+        left_side_points = [main_point]
+        right_side_points = [main_point]
+
+        src = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        new_left_point = True
+        while new_left_point :
+            
+            point_l = self.search_for_near_point(frame, gray_frame=src, base_point=left_side_points[-1], max_allowed_slope=max_allowed_slope, diraction="left", line=line)
+            
+            if not point_l :
+                new_left_point = False
+            else :
+                left_side_points.append(point_l)
+
+        new_right_point = True
+        while new_right_point :    
+            point_r = self.search_for_near_point(frame, gray_frame=src, base_point=right_side_points[-1], max_allowed_slope=max_allowed_slope, diraction="right", line=line)
+            
+            if not point_r :
+                new_right_point = False
+            else :
+                right_side_points.append(point_r)                
+
+        width_dif = (right_side_points[-1]["width"] - left_side_points[-1]["width"])
+        if width_dif == 0 :
+            return None
+        
+        slope = (right_side_points[-1]["height"] - left_side_points[-1]["height"]) / width_dif
+       
+        if abs(slope) > max_allowed_slope :
+            return None
+
+        x1 = (left_side_points[-1]['width'], left_side_points[-1]['height'])
+        x2 = (right_side_points[-1]['width'], right_side_points[-1]['height'])
+
+        return (x1,x2)
+
+    def search_for_near_point(self, frame, gray_frame, base_point, max_allowed_slope, diraction="right", width_step_perc=0.03, line=None):
+        
+        max_allowed_height_dif_from_line = 0.03 * self.height
+        
+        operator = 1 if diraction=="right" else -1 
+
+        width_step = int(width_step_perc * self.width)
+        sliding_window_height = int(0.15 * self.height)
+        
+        width = int(base_point['width'] + operator* width_step)
+        height = base_point['height'] if not line else line["slope"] * width + line["intercept"]
+        start = int(height - sliding_window_height/2)
+        end = int(height + sliding_window_height/2)
+
+        if (width < 0 or width >= self.width) or (start < 0 or end >= self.height) :
+            return None
+
+        tmp = [gray_frame[h][width] for h in range(start, end)]
+        ps = self.find_lane_peaks(
+            slice=tmp,
+            height_norm=0,
+            min_height=self.square_pulses_min_height,
+            min_height_dif=self.square_pulses_min_height_dif,
+            pix_dif=self.square_pulses_pix_dif,
+            allowed_peaks_width_error=self.square_pulses_allowed_peaks_width_error,
+        )
+        
+        if self.hor_step_by_step :
+            frame = cv2.line(frame,(width, start),(width, end),(60,20,220))
+            # cv2.imshow('hor2', frame)
+        
+        point = None
+        detection_height = None
+
+        if len(ps)==1 :
+            detection_height = ps[0]
+        
+        elif len(ps) > 1 :
+            min_index = 0
+            cnt = 1
+            while cnt < len(ps) :
+                if abs(ps[min_index] + start - base_point['height']) >= abs(ps[cnt] + start - base_point['height']) :
+                    min_index = cnt
+                cnt +=1 
+            detection_height = ps[min_index]
+        else :
+            return None
+
+        slope_with_base = abs((base_point["height"] - (detection_height + start)) / (base_point["width"] - width))
+        is_height_accepted = True if not line else abs(detection_height + start - height) <= max_allowed_height_dif_from_line
+       
+        if slope_with_base <= max_allowed_slope and is_height_accepted:
+            point = {'height': detection_height + start, "width": width}
+            if self.hor_step_by_step :
+                cv2.circle(frame, (point["width"], point["height"]), 2, (0,0,0), 2)
+                # cv2.imshow('hor2', frame)
+        else :
+            if self.hor_step_by_step :
+                
+                cv2.circle(frame, (width, detection_height + start), 2, (0,250,0), 2)
+                # cv2.imshow('hor2', frame)
+        return point
     # ------------------------------------------------------------------------------ #
 
     def peaks_detection(self, frame):
@@ -459,8 +682,8 @@ class LaneDetection:
         for i in range(pix_dif, len(slice) - pix_dif):
             pixel = slice[i]
 
-            height_dif_start = pixel - slice[i - pix_dif]
-            height_dif_end = pixel - slice[i + pix_dif]
+            height_dif_start = int(pixel) - int(slice[i - pix_dif])
+            height_dif_end = int(pixel) - int(slice[i + pix_dif])
 
             if inside_a_peak:
                 # peak finished
