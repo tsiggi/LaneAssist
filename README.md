@@ -9,9 +9,11 @@ The competition invites bachelor and master student teams every year to develop 
 - [Lane Detection](#lane-detection)
     - [Usage](#usage)
     - [How it Works](#how-it-works)
+    - [Horizontal](#horizontal-detection)
 - [Lane Keeping](#lane-keeping)
     - [Usage](#usage-1)
     - [How it Works](#how-it-works-1)
+    - [Change Lane]()
 - [Configuration](#configurations)
 - [Real world Results](#real-road-scenarios)
 - [Contributing](#contributing)
@@ -91,6 +93,11 @@ Detected lanes, initially represented as a list of points, are converted into a 
 ### 4. Post-Processing
 Post-processing steps are applied to the lanes, eliminating false lane detections and ensuring accuracy.
 
+## Horizontal Detection
+A visual representation of the algorithm in action. On the left, observe real-time detections of horizontal lines highlighted in green. On the right, gain a detailed understanding of the algorithmic process, showcasing frame-by-frame analysis for accurate line identification.
+
+![Lane Detection-Keeping Demonstration](/gifs/horizontal_detection.gif)
+
 # Lane Keeping
 This class implements the lane keeping algorithm by calculating steering angles from the detected lines.
 
@@ -127,6 +134,7 @@ The lane-keeping method creates a desired lane that the car should follow and th
 
 ...
 
+## Lane Changing
 
 
 # Configurations
