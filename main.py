@@ -1,6 +1,5 @@
 from src.LaneKeeping.lanekeeping import LaneKeeping
 from src.LaneDetection.detect import LaneDetection
-from src.variablesHandler import VariablesHandler
 import configparser
 import logging
 import imageio
@@ -20,13 +19,10 @@ if __name__ == "__main__" :
     if video :
         
         cap = cv2.VideoCapture("video_repository/highway.mp4")
-        # cap = cv2.VideoCapture("video_repository/intersection-road-block.mp4")
-        # cap = cv2.VideoCapture("video_repository/intersections.mp4")
-        # cap = cv2.VideoCapture("video_repository/intersections2.mp4")
+        cap = cv2.VideoCapture("video_repository/intersection-road-block.mp4")
         
         # cap = cv2.VideoCapture("video_repository/real_world.mp4")
         real_world_example = False # make it true if you use the real_world.mp4 video !!!
-        # better results with increased number of slices 
 
         skipped_frames = 10 #@param {type:"integer"}
         frames = []
@@ -45,26 +41,30 @@ if __name__ == "__main__" :
         while(cap.isOpened()):  
                         
             ret, src = cap.read()
-
             if ret :
-
                 # initialize them
                 if cnt<0 :
-                    camera = "405"
-                    if real_world_example :
-                        camera = "455"
+                    camera = "455"
                     ld = LaneDetection(src.shape[1], src.shape[0], camera)
                     lk = LaneKeeping(src.shape[1], src.shape[0], log, camera)
                     if real_world_example :
+                        # params adjusted for real roads
                         ld.square_pulses_min_height = 80
                         ld.square_pulses_pix_dif = 10
                         ld.square_pulses_min_height_dif = 20
                         ld.square_pulses_allowed_peaks_width_error = 15
+                        # also change (peaks_min/max_width, bottom_perc, bottom_width, top_width)
 
                 if real_world_example or cnt % skipped_frames == 0 :
                     frames_used += 1
                     start = time.time()
-                    results = ld.lanes_detection(src)
+                    ld_frame = src.copy()
+                    results = ld.lanes_detection(ld_frame)
+                    hor_frame = src.copy()
+                    hor_line, line, hor_exists = ld.horizontal_detection(hor_frame)
+                    cv2.imshow('hor2', hor_frame)
+                    if hor_exists :
+                        ld.visualize_horizontal_line(results['frame'], hor_line, line)
                     end = time.time()
                     elapsed = end - start
                     time_sum += elapsed 
@@ -73,12 +73,11 @@ if __name__ == "__main__" :
                     cv2.waitKey(1)
 
                     if start_saving_frames :
-                        cv2.imwrite(f".frames/lk_frame{frames_used}.jpg", src)
-                        # frames.append(src)
-
+                        cv2.imwrite(f".frames/ld_frame/{frames_used}.jpg", ld_frame)
+                        cv2.imwrite(f".frames/hor_frame/{frames_used}.jpg", hor_frame)
                 cnt+=1
                 
-                key = cv2.waitKey(100)
+                key = cv2.waitKey(10)
                 # Exit Video
                 if key == ord('q') :
                     print("Exiting...")
@@ -114,27 +113,63 @@ if __name__ == "__main__" :
     # Test Photos
     else :
 
-        src = cv2.imread("image_repository/test_real_world.jpg")
+        test_horizontal = True
+        test_change_lane = True
+
         log = logging.getLogger('Root logger')
-
-        # src = cv2.resize(src, dsize=None, fx=0.5, fy=0.5)
-        ld = LaneDetection(src.shape[1], src.shape[0], "405")
-        lk = LaneKeeping(src.shape[1], src.shape[0], log, "405")
         
+        if test_horizontal :
+            # Get image and rotate it
+            src = cv2.imread("image_repository/Starting_point.png")
+            src = cv2.resize(src, dsize=None, fx=0.5, fy=0.5)
+            rotation_angle = 10
+            height, width = src.shape[:2]
+            center = (width/2, height/2)
+            rotate_matrix = cv2.getRotationMatrix2D(center=center, angle=rotation_angle, scale=1)
+            rotated_image = cv2.warpAffine(src=src, M=rotate_matrix, dsize=(width, height))
+            src = rotated_image
 
-        results = ld.lanes_detection(src.copy())
-        cv2.imshow('ld', results["frame"])
-        angle1, src1 = lk.change_lane_maneuver(results, direction="left", overtake_type="static")
-        results = ld.lanes_detection(src.copy())
-        angle2, src2 = lk.change_lane_maneuver(results, direction="right", overtake_type="dynamic")
-        results = ld.lanes_detection(src.copy())
-        lk.reset_change_lane_params()
-        angle3, src3 = lk.lane_keeping(results)
+            # Initialize ld and lk
+            ld = LaneDetection(src.shape[1], src.shape[0], "455")
+            lk = LaneKeeping(src.shape[1], src.shape[0], log, "455")
 
-        # cv2.imwrite("frame2.jpg",src)
+            # get results for that frame
+            results = ld.lanes_detection(src.copy())
+            cv2.imshow('ld', results["frame"])
+            hor_frame = src.copy()
+            hor_line, line, hor_exists = ld.horizontal_detection(hor_frame)
+            if hor_exists :
+                ld.visualize_horizontal_line(results['frame'], hor_line, line)
+            cv2.imshow('hor', results["frame"])
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
 
-        cv2.imshow('Turn_Left.jpg', src1)
-        cv2.imshow('Turn_Right.jpg', src2)
-        cv2.imshow('lk_frame.jpg', src3)
-        cv2.waitKey(0)
+        if test_change_lane :
+            src = cv2.imread("image_repository/test_real_world.jpg")
+            
+            ld = LaneDetection(src.shape[1], src.shape[0], "405")
+            lk = LaneKeeping(src.shape[1], src.shape[0], log, "405")
+                    
+            # LD params adjusted for this real road example
+            ld.square_pulses_min_height = 150
+            ld.square_pulses_pix_dif = 10
+            ld.square_pulses_min_height_dif = 60
+            ld.square_pulses_allowed_peaks_width_error = 15
+
+            # show to visualized results
+            results = ld.lanes_detection(src.copy())
+            # cv2.imshow('ld', results["frame"])
+            angle1, src1 = lk.change_lane_maneuver(results, direction="left", overtake_type="static")
+            results = ld.lanes_detection(src.copy())
+            angle2, src2 = lk.change_lane_maneuver(results, direction="right", overtake_type="dynamic")
+            results = ld.lanes_detection(src.copy())
+            lk.reset_change_lane_params()
+            angle3, src3 = lk.lane_keeping(results)
+
+            cv2.imshow('Turn_Left.jpg', src1)
+            cv2.imshow('Turn_Right.jpg', src2)
+            cv2.imshow('lk_frame.jpg', src3)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
         
