@@ -13,7 +13,7 @@ The competition invites bachelor and master student teams every year to develop 
 - [Lane Keeping](#lane-keeping)
     - [Usage](#usage-1)
     - [How it Works](#how-it-works-1)
-    - [Change Lane]()
+    - [Change Lane](#lane-changing)
 - [Configuration](#configurations)
 - [Real world Results](#real-road-scenarios)
 - [Contributing](#contributing)
