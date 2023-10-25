@@ -135,6 +135,12 @@ The lane-keeping method creates a desired lane that the car should follow and th
 ...
 
 ## Lane Changing
+- Manipulating the desired lane enables lane changes.
+- When changing lanes, the lane on the desired side is shifted to the opposite side!
+
+<!-- ![lk-changing lane](/image_repository/lk_resutls.jpg) -->
+![lk-changing lane](/image_repository/lane_change.jpg)
+
 
 
 # Configurations
@@ -173,10 +179,14 @@ TODO : change those parameters dynamically.
 
 Explore real-world examples below to see the potential of this solution. By fine-tuning the parameters or making specific adjustments, you can achieve exceptional results. 
 Experiment with the following parameters to optimize outcomes for your unique use cases.
-```
+```ini
+# DETECTION
 square_pulses_min_height
 square_pulses_pix_dif
 square_pulses_min_height_dif
+# DESIRE LANE
+bottom_width
+top_width
 ```
 
 ![Halkidiki no lights](/gifs/real_world_halkidiki_no_lights.gif) 
