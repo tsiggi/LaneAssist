@@ -1,3 +1,39 @@
+"""
+MIT License 
+Copyright (c) 2023 Christos-Alexandros Tsingiropoulos
+
+This software contains work that was developed by Christos-Alexandros Tsingiropoulos
+as part of the Bosch Future Mobility Challenge (BFMC) competition project, which
+was organized by Bosch. This work represents Christos-Alexandros Tsingiropoulos's
+individual contribution to the larger project created by the VROOM team.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1) Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+
+2) Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+
+3) THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+4) While not mandatory, it would be appreciated if you include the following attribution
+when using or showcasing the work contributed by Christos-Alexandros Tsingiropoulos:
+
+"VROOM - BFMC 2023 Competition Project"
+Contributed by Christos-Alexandros Tsingiropoulos
+
+This attribution is appreciated as it gives credit to the team and individual contributors
+who worked on this project.
+"""
+
 import configparser
 import math
 import traceback

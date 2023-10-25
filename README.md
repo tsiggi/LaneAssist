@@ -192,3 +192,16 @@ top_width
 ![Halkidiki no lights](/gifs/real_world_halkidiki_no_lights.gif) 
 
 ![Petrou levanti road](/gifs/real_world_petrou_levanti_panorama.gif)
+
+# License
+
+This project is open-source and is released under the terms of the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Attribution (Appreciated)
+
+If you use or showcase the work contributed by Christos-Alexandros Tsingiropoulos during any competition or anywhere, it would be appreciated if any presentations, demos, or related materials include the following attribution:
+
+"VROOM - BFMC 2023 Competition Project"
+Contributed by Christos-Alexandros Tsingiropoulos
+
+This attribution is appreciated as it gives credit to the team and individual contributors who worked on this project.
