@@ -4,6 +4,8 @@
 Algorithms for **Lane Detection** and **Lane Keeping** developed and utilized by the **[Vroom](https://vroom.web.auth.gr/)** team, where I was a member for the **2023 BFMC**. [Bosch Future Mobility Challenge](https://boschfuturemobility.com/) (BFMC), is an international technical competition initiated by Bosch Engineering Center Cluj in 2017. 
 The competition invites bachelor and master student teams every year to develop **autonomous driving and connectivity** algorithms for **1:10 scale vehicles** to navigate in a designated environment simulating a **miniature smart city**. 
 
+![LANEASSIST](/image_repository/results/real_road.jpg)
+
 ## Table of Content
 - [Introduction](#introduction)
 - [Lane Detection](#lane-detection)
@@ -22,7 +24,8 @@ The competition invites bachelor and master student teams every year to develop 
 # Lane Detection 
 This class is designed to detect lanes on the road using computer vision techniques. The code is written in Python and utilizes the OpenCV library.
 
-![Lane Detection-Keeping Demonstration](/gifs/result_fast.gif)
+<!-- TODO : REMOVE/REPLACE GIF (WITH IMAGE) -->
+<!-- ![Lane Detection-Keeping Demonstration](/gifs/competition_track_highway.gif) -->
 
 ## Usage
 
@@ -69,18 +72,18 @@ For each slice, the following processes take place:
 
 1. **Points Detection Method:**
    The lane points in a histogram (slice) are treated as "squared pulses." The algorithm detects these pulses in the form of points.
-   ![Slice values](/image_repository/histogram_values.jpg)
+   ![Slice values](/image_repository/results/histogram_values.jpg)
 
    <!-- TODO: Implement Histogram function -->
 
    Running the point detection algorithm (without clustering) results in the visualization shown below:
 
-   ![Points Detection Visualization](/gifs/slices_point_detection_visualization.gif)
+   ![Points Detection Visualization](/gifs/visualization/slices_point_detection.gif)
 
 2. **Cluster Points into Different Lanes:**
    After detecting points in each slice, the algorithm clusters the newly detected points into lanes. This step involves organizing the points into coherent lanes.
 
-   ![Points Clustering Visualization](/gifs/clustering_visualization.gif)
+   ![Points Clustering Visualization](/gifs/visualization/clustering.gif)
 
 </details>
 
@@ -94,6 +97,7 @@ Detected lanes, initially represented as a list of points, are converted into a 
 Post-processing steps are applied to the lanes, eliminating false lane detections and ensuring accuracy.
 
 ## Horizontal Detection
+<!-- TODO: REPLACE THE GIF WITH A PHOTO OF A HORIZONTAL DETECTION. ADD A LINK FOR THE GIF!! -->
 A visual representation of the algorithm in action. On the left, observe real-time detections of horizontal lines highlighted in green. On the right, gain a detailed understanding of the algorithmic process, showcasing frame-by-frame analysis for accurate line identification.
 
 ![Lane Detection-Keeping Demonstration](/gifs/horizontal_detection.gif)
@@ -139,7 +143,7 @@ The lane-keeping method creates a desired lane that the car should follow and th
 - When changing lanes, the lane on the desired side is shifted to the opposite side!
 
 <!-- ![lk-changing lane](/image_repository/lk_resutls.jpg) -->
-![lk-changing lane](/image_repository/lane_change.jpg)
+![lk-changing lane](/image_repository/results/lane_change.jpg)
 
 
 
@@ -177,7 +181,7 @@ TODO : change those parameters dynamically.
 
 # Real Road Scenarios
 
-Explore real-world examples below to see the potential of this solution. By fine-tuning the parameters or making specific adjustments, you can achieve exceptional results. 
+Explore real-world examples [here](/gifs/real-roads/) to see the potential of this solution. By fine-tuning the parameters or making specific adjustments, you can achieve exceptional results. 
 Experiment with the following parameters to optimize outcomes for your unique use cases.
 ```ini
 # DETECTION
@@ -188,10 +192,6 @@ square_pulses_min_height_dif
 bottom_width
 top_width
 ```
-
-![Halkidiki no lights](/gifs/real_world_halkidiki_no_lights.gif) 
-
-![Petrou levanti road](/gifs/real_world_petrou_levanti_panorama.gif)
 
 # License
 
