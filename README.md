@@ -47,6 +47,7 @@ The `lanes_detection` method takes an image as input and returns a dictionary wi
 - `"trust_left"`: a boolean indicating whether the left lane is trustworthy or not,
 - `"trust_right"`: same for the right lane,
 - `"trust_lk"`: a boolean indicating whether the detected lanes are trustworthy or not.
+<!-- TODO: ADD HORIZONTAL RESULTS + DETECT -->
 
 Example of using the `lanes_detection` method:
 
@@ -98,9 +99,32 @@ Post-processing steps are applied to the lanes, eliminating false lane detection
 
 ## Horizontal Detection
 <!-- TODO: REPLACE THE GIF WITH A PHOTO OF A HORIZONTAL DETECTION. ADD A LINK FOR THE GIF!! -->
-A visual representation of the algorithm in action. On the left, observe real-time detections of horizontal lines highlighted in green. On the right, gain a detailed understanding of the algorithmic process, showcasing frame-by-frame analysis for accurate line identification.
+A visual representation of the algorithm in action can be found [here](/gifs/competition-roads/readme.md#intercections-horizontal-line-detection).
 
-![Lane Detection-Keeping Demonstration](/gifs/horizontal_detection.gif)
+
+<details>
+<summary>How the algorithm works</summary>
+For the detection of a horizontal line, the following processes take place:
+
+1. **Main Point Detection:**
+First it creates a vertical histogram and detects a main/base point (when there are no detections the search continues with verical histograms at different withds. Maximun number: 3).
+If a base point is not detected the function terminates, else it continues by identifying two near points (on the left and right side of the base point). With the new points a line is calculated (that possibly reprisent a horizontal line).
+<!-- TODO: maybe a compined photo of that (left: with near ponts, right: no detections at all)-->
+
+2. **Calculates Lane Boundaries:** 
+Finds the boundaries of the lane. 
+Starting point is the main_point that was previously calculated.
+First, it finds the left boundary by searcing leftmost for new points near 
+the inputed line. The process stops, when there is not a new point detection, or the new 
+point is not accepted (not allowed slope or extreme height difference from line).
+The boundary is the last detected point. Same process for the right boundary.
+<!-- TODO : a gif like point detection -->
+<!-- Visualization :  -->
+
+3. **Post Processing:** Finaly checks if the above results, represident an allowed horizontal line.
+</details>
+
+</br>
 
 # Lane Keeping
 This class implements the lane keeping algorithm by calculating steering angles from the detected lines.
