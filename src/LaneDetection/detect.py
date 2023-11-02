@@ -240,17 +240,59 @@ class LaneDetection:
             # frame = cv2.line(frame, (w1,h1), (w2,h2), (150,150,150), thickness=3)
 
     def horizontal_detection(self, frame, max_allowed_slope=0.25):
+        """Performs the horizontal detection on the given frame
+        1) Finds the base point using the 'detect_main_point' function
+        2) Caculates the lanes endpoints 'detect_lane_line_endpoints'
+        3) Check if the results represident a horizontal line
         
+        Parameters
+        ----------
+        frame : array
+            Input image
+        max_allowed_slope : float
+            The maximum slope that a horizontal line can have. Used to discard false detections.
+        
+        Results
+        -------
+        list : [[x1,y1], [x2,y2]] 
+            horizontal lane boundaries. start=[x1,y1], end=[x2,y2]. 
+        dict : {"slope": slope, "intercept": intercept, "num_of_slopes": num_of_slopes}
+            a possible horizontal line.
+        bool : hor_exists
+            if the detected horizontal line is acceptable.    
+        """
+        # 1)
         main_point, line = self.detect_main_point(frame, max_allowed_slope)
-
+        # 2)
         detected_line_segment = self.detect_lane_line_endpoints(frame, main_point, line, max_allowed_slope)
-    
+        # 3)
         hor_min_width_dist = 0.2 * self.width
         hor_exists = detected_line_segment and (detected_line_segment[1][0] - detected_line_segment[0][0]) > hor_min_width_dist
 
         return detected_line_segment, line, hor_exists
 
     def detect_main_point(self, frame, max_allowed_slope):
+        """First it creates a vertical histogram and detects a main/base point (when
+        there are no detections the search continues with verical histograms at
+        different withds. Maximun number: max_iterations). If a base point is not
+        detected the function terminates, else it continues by identifying two near
+        points (on the left and right side of the base point). With the new points
+        a line is calculated (that rouphly reprisents the horizontal line).
+
+        Parameters
+        ----------
+        frame : array
+            Input image
+        max_allowed_slope : float
+            The maximum slope that a horizontal line can have. Used to discard false detections.
+
+        Results
+        -------
+        list : [x,y]
+            the base/main point of the horizontal line.
+        dict : {"slope": slope, "intercept": intercept, "num_of_slopes": num_of_slopes}
+            a possible horizontal line.
+        """
         
         src = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
@@ -343,7 +385,24 @@ class LaneDetection:
         return None, None
 
     def detect_lane_line_endpoints(self, frame, main_point, line, max_allowed_slope):
+        """Finds the boundaries of the lane. Starting point is the inputed main_point.
+        First it finds the left boundary by searcing leftmost for new points near 
+        the inputed line. The process stops when there is no new point or the new 
+        point is not accepted (not allowed slope or height difference from line).
+        The boundary is the last detected point. Same process for the right boundary.
+
+        Parameters
+        ----------
+        frame : array
+            Input image
+        list : [x,y]
+            the base/main point of the horizontal line. (the search starts from here)
+        line : dict 
+            the possible horizontal line. {"slope": slope, "intercept": intercept, "num_of_slopes": num_of_slopes} 
+        max_allowed_slope : float
+            The maximum slope that a horizontal line can have. Used to discard false detections.
         
+        """
         if not main_point : 
             return None
         
@@ -386,7 +445,33 @@ class LaneDetection:
         return (x1,x2)
 
     def search_for_near_point(self, frame, gray_frame, base_point, max_allowed_slope, diraction="right", width_step_perc=0.03, line=None):
+        """Searchs for points near (depends on the diracion, width_step_perc and the line) the base_point.
+        The detected point is accepted only if it meats the following constraints:
+        - does not exceed the allowed height difference,
+        - the slope of the line with the base point is accepted (<= max_allowed_slope)
+
+        Parameters
+        ----------
+        frame : array
+            BGR image (for visulization if step_by_step is True)
+        gray_frame : array
+            grayscaled image (for the histogram).
+        base_point : dict
+            the previous detected point {'height': height, "width": width}.
+        max_allowed_slope : float
+            The maximum slope that a horizontal line can have. Used to discard false detections.
+        diraction : string
+            the diraction of the search (right-left).
+        width_step_perc : float
+            the width step from the previous detection.
+        line : dict 
+            the possible horizontal line. {"slope": slope, "intercept": intercept, "num_of_slopes": num_of_slopes} 
         
+        Returns
+        -------
+        dictionary :
+            representing a point {'height': height, "width": width}.
+        """
         max_allowed_height_dif_from_line = 0.03 * self.height
         
         operator = 1 if diraction=="right" else -1 
@@ -1675,20 +1760,3 @@ class LaneDetection:
         self.min_points = min_dash_points_perc * self.real_slices
         self.min_points_space = min_space_points_perc * self.real_slices
 
-    def horizontal_line(self):
-        self.choose_455()
-
-        self.is_horizontal = True
-        perc_from_mid = float(self.config["LANE_DETECT"].get("hor_perc_from_mid"))
-        self.bottom_row_index = int((self.height // 2) + self.height * perc_from_mid)
-        end = int((self.height // 2) - self.height * perc_from_mid)
-        self.step = int(-(self.height * 2 * perc_from_mid / self.slices))
-        self.real_slices = int((end - self.bottom_row_index) // self.step)
-        self.top_row_index = int(self.bottom_row_index + self.real_slices * self.step)
-        self.print_lanes = True
-        self.print_peaks = True
-        self.peaks_max_width = int(self.config["LANE_DETECT"].get("hor_peaks_max_width"))
-        self.peaks_min_width = int(self.config["LANE_DETECT"].get("hor_peaks_min_width"))
-        self.square_pulses_allowed_peaks_width_error = int(
-            self.config["LANE_DETECT"].get("hor_square_pulses_allowed_peaks_width_error")
-        )
