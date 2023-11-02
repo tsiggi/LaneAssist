@@ -99,7 +99,7 @@ Post-processing steps are applied to the lanes, eliminating false lane detection
 
 ## Horizontal Detection
 <!-- TODO: REPLACE THE GIF WITH A PHOTO OF A HORIZONTAL DETECTION. ADD A LINK FOR THE GIF!! -->
-A visual representation of the algorithm in action can be found [here](/gifs/competition-roads/readme.md#intercections-horizontal-line-detection).
+A visual representation of the algorithm in action can be found [here](/gifs/competition-roads#intercections-horizontal-line-detection).
 
 
 <details>
