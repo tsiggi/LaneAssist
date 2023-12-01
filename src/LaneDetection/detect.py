@@ -37,8 +37,6 @@ who worked on this project.
 
 import configparser
 import math
-import time
-import imageio
 
 import cv2
 import numpy as np
@@ -50,10 +48,11 @@ class LaneDetection:
     This class implements the lane detection algorithm by detecting lane lines in an input image using computer vision techniques.
     """
 
-    def __init__(self, width, height, camera):
+    def __init__(self, width, height, camera, lk):
 
         self.height = height
         self.width = width
+        self.lk = lk
 
         self.config = configparser.ConfigParser()
         self.config.read("config.ini")
@@ -207,6 +206,7 @@ class LaneDetection:
             self.visualize_all_peaks(src, peaks)
             self.visualize_peaks(src, left, right)
 
+        self.update_b_and_top_through_coefs(left_coef, right_coef, trust_l, trust_r)
         # dashed_l, dashed_r = self.check_for_dashed(left, right, src)
 
         lane_det_results = {
@@ -225,6 +225,39 @@ class LaneDetection:
         }
 
         return lane_det_results
+
+    def update_b_and_top_through_coefs(self, left_coef, right_coef, trust_left_lane, trust_right_lane):
+        """Updates the self.top_width and self.bottom_width for better calculation of the desired lane.
+
+        Parameters
+        ----------
+        left_coef : array
+            Polynomial representing the left lane (2nd degree)
+        right_coef : array
+            Polynomial representing the right lane (2nd degree)
+        """
+
+        if left_coef is None or right_coef is None or not trust_left_lane or not trust_right_lane:
+            return
+
+        bot_h = self.bottom_row_index
+        top_h = self.top_row_index
+
+        a, b, c = left_coef[0], left_coef[1], left_coef[2]
+        l_b = int(a * bot_h**2 + b * bot_h + c)
+        l_t = int(a * top_h**2 + b * top_h + c)
+
+        a, b, c = right_coef[0], right_coef[1], right_coef[2]
+        r_b = int(a * bot_h**2 + b * bot_h + c)
+        r_t = int(a * top_h**2 + b * top_h + c)
+
+        self.bottom_width = (r_b - l_b) // 2
+        print(f"DID IT FOR BOTTOM!!! to {self.bottom_width}")
+        self.top_width = (r_t - l_t) // 2
+        print(f"DID IT FOR TOP!!! to {self.top_width}")
+        self.lk.bottom_width = self.bottom_width
+        self.lk.top_width = self.top_width
+
 
     # ------------------------------- HORIZONTAL ----------------------------------- #
 
