@@ -38,10 +38,8 @@ from src.LaneKeeping.lanekeeping import LaneKeeping
 from src.LaneDetection.detect import LaneDetection
 import configparser
 import logging
-import imageio
 import time
 import cv2
-import numpy as np
 
 
 if __name__ == "__main__" :
@@ -69,6 +67,7 @@ if __name__ == "__main__" :
         sf = -1
         log = logging.getLogger('Root logger')
         start_saving_frames = False
+        # video = cv2.VideoWriter("video.avi", 0, 60, (width,height))
         
         cnt = -1
         frames_used = 0
@@ -78,11 +77,13 @@ if __name__ == "__main__" :
                         
             ret, src = cap.read()
             if ret :
+                # src = cv2.resize(src, dsize=None, fx=0.5, fy=0.5)
+    
                 # initialize them
                 if cnt<0 :
                     camera = "455"
-                    ld = LaneDetection(src.shape[1], src.shape[0], camera)
                     lk = LaneKeeping(src.shape[1], src.shape[0], log, camera)
+                    ld = LaneDetection(src.shape[1], src.shape[0], camera, lk)
                     if real_world_example :
                         # params adjusted for real roads
                         ld.square_pulses_min_height = 80
@@ -96,11 +97,11 @@ if __name__ == "__main__" :
                     start = time.time()
                     ld_frame = src.copy()
                     results = ld.lanes_detection(ld_frame)
-                    hor_frame = src.copy()
-                    hor_line, line, hor_exists = ld.horizontal_detection(hor_frame)
-                    cv2.imshow('hor2', hor_frame)
-                    if hor_exists :
-                        ld.visualize_horizontal_line(results['frame'], hor_line, line)
+                    # hor_frame = src.copy()
+                    # hor_line, line, hor_exists = ld.horizontal_detection(hor_frame)
+                    # cv2.imshow('hor2', hor_frame)
+                    # if hor_exists :
+                    #     ld.visualize_horizontal_line(results['frame'], hor_line, line)
                     end = time.time()
                     elapsed = end - start
                     time_sum += elapsed 
@@ -110,7 +111,7 @@ if __name__ == "__main__" :
 
                     if start_saving_frames :
                         cv2.imwrite(f".frames/ld_frame/{frames_used}.jpg", ld_frame)
-                        cv2.imwrite(f".frames/hor_frame/{frames_used}.jpg", hor_frame)
+                        # cv2.imwrite(f".frames/hor_frame/{frames_used}.jpg", hor_frame)
                 cnt+=1
                 
                 key = cv2.waitKey(10)
@@ -149,11 +150,26 @@ if __name__ == "__main__" :
     # Test Photos
     else :
 
-        test_horizontal = True
-        test_change_lane = True
+        test_lane_detection = True
+        test_horizontal = False
+        test_change_lane = False
 
         log = logging.getLogger('Root logger')
         
+        if test_lane_detection :
+            src = cv2.imread("image_repository/real_world.jpg")
+            # src = cv2.resize(src, dsize=None, fx=0.5, fy=0.5)
+
+            # Initialize ld and lk
+            ld = LaneDetection(src.shape[1], src.shape[0], "455")
+            lk = LaneKeeping(src.shape[1], src.shape[0], log, "455")
+            # get results for that frame
+            results = ld.lanes_detection(src.copy())
+            angle, f = lk.lane_keeping(results)
+            
+            cv2.imshow("ld", f)
+            cv2.imwrite("ld.jpg", results["frame"])
+            cv2.waitKey(0)
         if test_horizontal :
             # Get image and rotate it
             src = cv2.imread("image_repository/Starting_point.png")
