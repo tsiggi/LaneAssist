@@ -124,8 +124,6 @@ The boundary is the last detected point. Same process for the right boundary.
 3. **Post Processing:** Finaly checks if the above results, represident an allowed horizontal line.
 </details>
 
-</br>
-
 # Lane Keeping
 This class implements the lane keeping algorithm by calculating steering angles from the detected lines.
 
