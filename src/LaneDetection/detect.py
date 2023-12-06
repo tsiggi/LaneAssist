@@ -84,6 +84,7 @@ class LaneDetection:
         self.min_dual_lane_certainty = int(self.config["LANE_DETECT"].get("min_dual_lane_certainty"))
 
         self.square_pulses_min_height = int(self.config["LANE_DETECT"].get("square_pulses_min_height"))
+        self.minimum = self.square_pulses_min_height
         self.square_pulses_pix_dif = int(self.config["LANE_DETECT"].get("square_pulses_pix_dif"))
         self.square_pulses_min_height_dif = int(self.config["LANE_DETECT"].get("square_pulses_min_height_dif"))
         self.square_pulses_allowed_peaks_width_error = int(self.config["LANE_DETECT"].get("square_pulses_allowed_peaks_width_error"))
@@ -183,9 +184,27 @@ class LaneDetection:
             Indicating whether the detected lanes are trustworthy or not
         """
 
-        lanes, peaks = self.peaks_detection(src)
+        lanes, peaks, gray = self.peaks_detection(src)
         # self.peaks_clustering_visualization(src, lanes)
         left, right = self.choose_correct_lanes(lanes)
+
+        if len(peaks) > 0 : 
+            
+            heights_l = [gray[y][x] for x,y in left]
+            heights_r = [gray[y][x] for x,y in right]
+            maximum = 170
+            tmp = 0 if len(heights_l) == 0 or len(heights_r) == 0 else min(min(heights_l), min(heights_r)) - 20
+            # tmp = 0 if len(heights_l) == 0 or len(heights_r) == 0 else (sum(heights_l) + sum(heights_r)) / (len(heights_l) + len(heights_r)) - 20
+            if tmp >= self.minimum and tmp <= maximum : 
+                self.square_pulses_min_height = tmp
+                # print(f"set to {tmp}")
+            if len(left) + len(right) < 10 :
+                self.square_pulses_min_height = self.minimum
+                # print(f"Reset to {self.minimum}")
+                
+            
+
+
 
         # Create lanes (polyfits) (vizualize lanes)
         left_coef, right_coef = self.create_lanes_from_peaks(src, left, right)
@@ -252,9 +271,9 @@ class LaneDetection:
         r_t = int(a * top_h**2 + b * top_h + c)
 
         self.bottom_width = (r_b - l_b) // 2
-        print(f"DID IT FOR BOTTOM!!! to {self.bottom_width}")
+        # print(f"DID IT FOR BOTTOM!!! to {self.bottom_width}")
         self.top_width = (r_t - l_t) // 2
-        print(f"DID IT FOR TOP!!! to {self.top_width}")
+        # print(f"DID IT FOR TOP!!! to {self.top_width}")
         self.lk.bottom_width = self.bottom_width
         self.lk.top_width = self.top_width
 
@@ -628,7 +647,7 @@ class LaneDetection:
             
             # cv2.imwrite(f"frame_{cnt}.jpg", frame)
 
-        return lanes, peaks
+        return lanes, peaks, src
 
     def choose_correct_lanes(self, lanes):
         """Given a list of all lanes detected in an image, this function selects the left and right lanes.
@@ -1426,9 +1445,9 @@ class LaneDetection:
 
         # Lane Peaks
         # 1)
-        # peaks_percentage = len(peaks) / self.slices * 100
+        peaks_percentage = len(peaks) / self.real_slices * 100
         # 2)
-        peaks_percentage = (peaks[-1][1] - peaks[0][1]) / (self.top_row_index - self.bottom_row_index) * 100
+        # peaks_percentage = (peaks[-1][1] - peaks[0][1]) / (self.top_row_index - self.bottom_row_index) * 100
 
         certainty = (
             self.certainty_perc_from_peaks * peaks_percentage
