@@ -110,8 +110,11 @@ if __name__ == "__main__" :
                     cv2.waitKey(1)
 
                     if start_saving_frames :
-                        cv2.imwrite(f".frames/ld_frame/{frames_used}.jpg", ld_frame)
-                        # cv2.imwrite(f".frames/hor_frame/{frames_used}.jpg", hor_frame)
+                        # cv2.imwrite(f".frames/ld_frame/{frames_used}.jpg", ld_frame)
+                        # cv2.imwrite(f".frames/hor_frame20/{frames_used}.jpg", ld_frame)
+                        cv2.imwrite(f".frames/desire/{frames_used}.jpg", ld_frame)
+                        # cv2.imwrite(f".frames/all_prints/{frames_used}.jpg", ld_frame)
+
                 cnt+=1
                 
                 key = cv2.waitKey(10)
