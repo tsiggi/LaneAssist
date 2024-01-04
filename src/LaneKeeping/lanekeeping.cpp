@@ -7,7 +7,7 @@
 #include "lanekeeping.hpp"
 #include <iostream>
 #include <vector>
-#include <eigen/Eigen/Dense>
+#include <Eigen/Dense>
 
 
 laneKeeping::laneKeeping(int width, int height, std::string &camera){
@@ -19,7 +19,7 @@ laneKeeping::laneKeeping(int width, int height, std::string &camera){
 
     // LK
     this->median_constant = 2;
-    this->print_desire_lane = false;
+    this->print_desire_lane = true;
     this->bottom_width_455 = 190;
     this->bottom_width_405 = 145;
     this->top_width_455 = 85;
