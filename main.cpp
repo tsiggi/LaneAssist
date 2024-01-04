@@ -19,8 +19,10 @@ int main()
     if (has_video)
     {
         std::string camera("455");
-        std::string video_path = cv::String("/mnt/c/Users/giann/Desktop/Work Experience/LaneAssist/video_repository/highway.mp4");
+        std::string full_path_to_videos = "/mnt/c/Users/giann/Desktop/Work Experience/LaneAssist/"; // put your full path to repo
+        std::string video_path = cv::String(full_path_to_videos + "video_repository/highway.mp4");
         cv::VideoCapture cap(video_path);
+
         // Check if the video file is opened successfully
         if (!cap.isOpened()) {
             std::cerr << ">>> Error: Could not open the video file. Check the path!!!" << std::endl;
