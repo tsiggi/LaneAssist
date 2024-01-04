@@ -5,16 +5,21 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include "src/LaneDetection/detect.hpp"
+#include "src/LaneKeeping/lanekeeping.hpp"
+
+#define FRAME_WIDTH 510
+#define FRAME_HEIGHT 280
 
 
 int main()
 {
 
     LaneDetectionResults ld_results;
-    if (true)
+    bool has_video = true;
+    if (has_video)
     {
         std::string camera("455");
-        std::string video_path = cv::String("path/video_repository/highway.mp4");
+        std::string video_path = cv::String("/mnt/c/Users/giann/Desktop/Work Experience/LaneAssist/video_repository/highway.mp4");
         cv::VideoCapture cap(video_path);
         // Check if the video file is opened successfully
         if (!cap.isOpened()) {
@@ -27,12 +32,14 @@ int main()
         cv::Mat image;
         bool ret;
 
-        detect laneDetection(510, 280, camera);
+        detect laneDetection(FRAME_WIDTH, FRAME_HEIGHT, camera);
+        laneKeeping lane_keeping_obj(FRAME_WIDTH, FRAME_HEIGHT, camera);
 
         while (cap.isOpened())
         {
             // Skip frames 
-            while(sf < skipped_frames){
+            while(sf < skipped_frames)
+            {
                 ret = cap.read(image);
                 sf++;
             }
@@ -44,10 +51,11 @@ int main()
                 cnt++;  // image number
 
                 auto start = std::chrono::high_resolution_clock::now();
-
                 ld_results = laneDetection.lanes_detection(image);                
-                
                 auto finish = std::chrono::high_resolution_clock::now();
+
+                double angle = lane_keeping_obj.lane_keeping(ld_results);
+                // std::cout << "Angle " << angle << std::endl;
 
                 elapsed = finish - start;
                 sum += elapsed.count();

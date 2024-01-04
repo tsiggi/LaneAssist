@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <Eigen/Dense>
+#include <eigen/Eigen/Dense>
 
 struct Polynomial {
     double a; // Coefficient of x^2 term

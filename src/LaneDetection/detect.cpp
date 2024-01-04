@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 #include "helpers.hpp"
-#include <Eigen/Dense>
+#include <eigen/Eigen/Dense>
 
 detect::~detect(){
     std::cout << ">>> Deconstructor called..." << std::endl;
