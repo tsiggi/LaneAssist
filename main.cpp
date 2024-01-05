@@ -15,12 +15,12 @@ int main()
 {
 
     LaneDetectionResults ld_results;
-    bool has_video = true;
+    std::string full_path_to_repo = "/mnt/c/Users/giann/Desktop/Work Experience/LaneAssist/"; // put your full path to repo
+    bool has_video = false;
     if (has_video)
     {
         std::string camera("455");
-        std::string full_path_to_videos = "/mnt/c/Users/giann/Desktop/Work Experience/LaneAssist/"; // put your full path to repo
-        std::string video_path = cv::String(full_path_to_videos + "video_repository/highway.mp4");
+        std::string video_path = cv::String(full_path_to_repo + "video_repository/highway.mp4");
         cv::VideoCapture cap(video_path);
 
         // Check if the video file is opened successfully
@@ -32,10 +32,10 @@ int main()
         std::chrono::duration<double> elapsed;
         double sum = 0.0;
         cv::Mat image;
-        bool ret;
+        bool ret = cap.read(image);
 
-        detect laneDetection(FRAME_WIDTH, FRAME_HEIGHT, camera);
-        laneKeeping lane_keeping_obj(FRAME_WIDTH, FRAME_HEIGHT, camera);
+        detect laneDetection(image.cols, image.rows, camera);
+        laneKeeping laneKeeping(image.cols, image.rows, camera);
 
         while (cap.isOpened())
         {
@@ -56,7 +56,7 @@ int main()
                 ld_results = laneDetection.lanes_detection(image);                
                 auto finish = std::chrono::high_resolution_clock::now();
 
-                double angle = lane_keeping_obj.lane_keeping(ld_results);
+                double angle = laneKeeping.lane_keeping(ld_results);
                 // std::cout << "Angle " << angle << std::endl;
 
                 elapsed = finish - start;
@@ -81,21 +81,26 @@ int main()
     else
     {
         cv::Mat image;
-        std::string image_path = cv::String("path/image_repository/Starting_point.png");
+        std::string image_path = cv::String(full_path_to_repo + "image_repository/Starting_point.png");
+
+        image = cv::imread(image_path, 1);
         // Check if the image is read successfully
         if (image.empty()) {
             std::cerr << ">>> Error: Could not open or read the image file. Check the path!!!" << std::endl;
             return -1;
         }
-        image = cv::imread(image_path, 1);
         cv::resize(image, image, cv::Size(), 0.5, 0.5);
         std::string camera("405");
 
         detect laneDetection(image.cols, image.rows, camera);
+        laneKeeping laneKeeping(image.cols, image.rows, camera);
 
-        laneDetection.lanes_detection(image);
+        ld_results = laneDetection.lanes_detection(image);
+        double angle = laneKeeping.lane_keeping(ld_results);
         imshow("ld", image);
         cv::waitKey(0);
+
+        // std::cout << "Angle " << angle << std::endl;
     }
 
     return 0;

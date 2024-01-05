@@ -5,7 +5,7 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
-#include "../laneDetection/detect.hpp"
+#include "../LaneDetection/detect.hpp"
 #include <stdio.h>
 #include <iostream>
 #include <string>
