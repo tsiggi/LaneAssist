@@ -14,7 +14,7 @@ for data in dataset:
     # Visualize the lanes
     for i, lane in enumerate(lanes): 
         for point in lane:
-            cv2.circle(image, (point[0], point[1]), 5, colours[i], 5)
+            cv2.circle(image, (point[0], point[1]), 2, colours[i], 2)
     
     cv2.imshow("Lanes", image)
     cv2.waitKey(0)

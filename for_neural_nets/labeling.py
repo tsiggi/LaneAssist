@@ -21,15 +21,16 @@ class LanePeakLabeler:
         
         # Parameters
         self.max_lanes = 5 
-        self.bottom_offset = 20 # in pixels
-        self.bottom_perc = 0.58 # percentage of the height
-        self.slices = 30        # number of slices
+        self.bottom_offset = 100 # in pixels
+        self.bottom_perc = 0.5 # percentage of the height
+        self.slices = 40        # number of slices
         self.colours = [
             (255, 0, 0), (0, 255, 0), (0, 0, 255), (0, 0, 0),
             (255, 0, 255), (255, 255, 0), (128, 0, 255), (255, 128, 0),
             (128, 0, 128), (0, 128, 128), (128, 128, 0)
         ]
-        self.skipped_frames = 100 # Number of frames to skip in video
+        self.skipped_frames = 10 # Number of frames to skip in video
+        self.skip_first_frames = 0
         self.height_minimum_difference = 2 # Minimum height difference to consider a peak
         
         # Initialize data structures
@@ -108,8 +109,8 @@ class LanePeakLabeler:
                 
                 if key_char in ['1','2','3','4','5','6','7','8','9']:
                     current_lane = int(key_char) - 1 
-                    cv2.circle(self.classification_image, (x, y), 3, self.colours[current_lane], -2)
-                    cv2.circle(self.src, (x, y), 3, self.colours[current_lane], -2)
+                    cv2.circle(self.classification_image, (x, y), 6, self.colours[current_lane], -1)
+                    cv2.circle(self.src, (x, y), 6, self.colours[current_lane], -1)
                     cv2.imshow("src", self.classification_image)
                     cv2.waitKey(1)
                     return True, current_lane 
@@ -155,6 +156,14 @@ class LanePeakLabeler:
                 flag_previous_height = False
                 height = height - self.step if height < self.bottom_row_index else self.bottom_row_index
                 i = len(self.histograms_peaks[height]) - 1
+                flag_run = True 
+                while i < 0 and flag_run: 
+                    height = height - self.step 
+                    i = len(self.histograms_peaks[height]) - 1
+                    if height > self.bottom_row_index: 
+                        flag_run = False
+                        height = self.bottom_row_index
+                        i = 0
             else : 
                 height += self.step 
 
@@ -299,6 +308,7 @@ class LanePeakLabeler:
         cv2.imshow("src", img)
         cv2.waitKey(1)
         
+        plt.figure(figsize=(15, 5))
         plt.plot(list(range(img.shape[1])), self.histogram , color=color)
         plt.xlabel('Width')
         plt.ylabel('Height')
@@ -307,7 +317,7 @@ class LanePeakLabeler:
         plt.gcf().canvas.mpl_connect('button_press_event', self.on_click)
         plt.gcf().canvas.mpl_connect('key_press_event', self.on_key)
         plt.show()
-        plt.clf()   
+        # plt.clf()
 
     def compute_heights_of_histogram(self, img_height):
         self.bottom_row_index = img_height - self.bottom_offset
@@ -325,10 +335,13 @@ class LanePeakLabeler:
             self.image_path = None
             
         elif self.video_path:
+            # offset for the first frame
             # initialize video capture
             if self.cap is None:
                 self.cap = cv2.VideoCapture(self.video_path)
                 ret, src = self.cap.read()
+                for _ in range(self.skip_first_frames - 1):
+                    ret, src = self.cap.read()
                 if not ret:
                     print(">>> Error: Could not read video")
                     self.cap.release()
