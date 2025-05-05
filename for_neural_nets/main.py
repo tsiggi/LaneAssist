@@ -18,7 +18,6 @@ for data in dataset:
     
     cv2.imshow("Lanes", image)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
-
+cv2.destroyAllWindows()
 

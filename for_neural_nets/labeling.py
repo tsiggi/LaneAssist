@@ -21,9 +21,9 @@ class LanePeakLabeler:
         
         # Parameters
         self.max_lanes = 5 
-        self.bottom_offset = 100 # in pixels
+        self.bottom_offset = 50 # in pixels
         self.bottom_perc = 0.5 # percentage of the height
-        self.slices = 40        # number of slices
+        self.slices = 60        # number of slices
         self.colours = [
             (255, 0, 0), (0, 255, 0), (0, 0, 255), (0, 0, 0),
             (255, 0, 255), (255, 255, 0), (128, 0, 255), (255, 128, 0),
@@ -177,38 +177,26 @@ class LanePeakLabeler:
 
         return lanes 
 
-    def find_peak_from_user_clicks(self, left_x, left_y, right_x):
+    def find_peak_from_user_clicks(self, left_x, y, right_x):
         i = left_x
-        step = 3
+        step = 2 if left_x < right_x else -2
         cnt = 0 
-        while (self.histogram[i] - left_y < self.height_minimum_difference) and (i < right_x):
+
+        while (self.histogram[i] - y < self.height_minimum_difference) and ((left_x <= i and i < right_x) or (right_x < i and i <= left_x)):
             i+= step
             cnt += 1
-        if cnt < 2 or i > right_x:
+        if cnt < 1 or (i > right_x and step > 0) or (i < left_x and step > 0):
             return None
         x_1 = i - step / 2
         cnt = 0
-        while (self.histogram[i] - left_y > self.height_minimum_difference) and (i < right_x):
+        while (self.histogram[i] - y > self.height_minimum_difference) and ((left_x <= i and i < right_x) or (right_x < i and i <= left_x)):
             i+= step
             cnt += 1
-        if cnt < 2 or i > right_x:
+        if cnt < 1 or (i > right_x and step > 0) or (i < left_x and step > 0):
             return None
         x_2 = i - step / 2
         return int((x_1 + x_2) / 2)
 
-        while (self.histogram[i] - self.height_minimum_difference < left_y and self.histogram[i+2] - self.height_minimum_difference > left_y) and (i+2 < right_x):
-            i+= 2 
-        if i + 2 > right_x:
-            return None
-        x_1 = i 
-        i+= 2 
-        while (self.histogram[i] + self.height_minimum_difference > left_y and self.histogram[i+2] + self.height_minimum_difference < left_y) and (i+2 < right_x):
-            i+= 2
-        if i + 2 > right_x:
-            return None     
-        x_2 = i
-        print (x_1, x_2)
-        return int((x_1 + x_2) / 2)
 
     def on_click(self, event):
         """Handle mouse clicks on the histogram plot"""
@@ -229,9 +217,6 @@ class LanePeakLabeler:
             left_x, left_y = self.clicks[-2]
             right_x, right_y = self.clicks[-1]
             
-            # Ensure left_x is actually to the left
-            if left_x > right_x:
-                left_x, right_x = right_x, left_x
 
             # Find the the peak
             peak_x = self.find_peak_from_user_clicks(left_x, max(left_y,right_y), right_x)
@@ -381,7 +366,25 @@ def main():
     print("Press 'b' to go BACK to the PREVIOUS point")
     print()
     # Change these paths as needed
-    video_path = "video_repository/real_world.mp4"
+    video_path = "video_repository/real_roads/IMG_2997.mp4"
+    video_path = "video_repository/real_roads/IMG_2988.mp4"
+    video_path = "video_repository/real_roads/IMG_2987.mp4"
+    video_path = "video_repository/real_roads/IMG_2986.mp4"
+    video_path = "video_repository/real_roads/IMG_2985.mp4"
+    video_path = "video_repository/real_roads/IMG_2984.mp4"
+    video_path = "video_repository/real_roads/IMG_2983.mp4"
+    video_path = "video_repository/real_roads/IMG_2951.mp4"
+    video_path = "video_repository/real_roads/IMG_2950.mp4"
+    video_path = "video_repository/real_roads/IMG_2948.mp4"
+    video_path = "video_repository/real_roads/IMG_2946.mp4"
+    video_path = "video_repository/real_roads/IMG_2944.mp4"
+    video_path = "video_repository/real_roads/IMG_2893.mp4"
+    video_path = "video_repository/real_roads/IMG_2892.mp4"
+    video_path = "video_repository/real_roads/IMG_2891.mp4"
+    # video_path = "video_repository/real_roads/IMG_2890.mp4"     # DONE
+    # video_path = "video_repository/real_roads/IMG_2889.mp4"     # DONE
+    # video_path = "video_repository/real_world.mp4"              # DONE 
+    # video_path = "video_repository/real_roads/IMG_2888.mp4"     # DONE 
     labeler = LanePeakLabeler(video_path=video_path)
 
     # image_path = "image_repository/real_world.jpg"
