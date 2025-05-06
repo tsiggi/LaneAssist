@@ -23,7 +23,7 @@ class LanePeakLabeler:
         self.max_lanes = 5 
         self.bottom_offset = 50 # in pixels
         self.bottom_perc = 0.5 # percentage of the height
-        self.slices = 60        # number of slices
+        self.slices = 80        # number of slices
         self.colours = [
             (255, 0, 0), (0, 255, 0), (0, 0, 255), (0, 0, 0),
             (255, 0, 255), (255, 255, 0), (128, 0, 255), (255, 128, 0),
@@ -42,6 +42,7 @@ class LanePeakLabeler:
         self.clicks = []
         self.flag_go_back = False
         self.flag_skip_this_frame = False
+        self.flag_click_is_the_peak = False
 
     def start_labeling(self):
         # load the source [image or frame of a video (repeat for every frame)]
@@ -197,10 +198,28 @@ class LanePeakLabeler:
         x_2 = i - step / 2
         return int((x_1 + x_2) / 2)
 
+    def make_click_a_peak(self, event):
+        """Make the click a peak"""
+        if event.xdata is None or event.ydata is None:
+            return
+        
+        x = int(event.xdata)
+        y = int(event.ydata)
+
+        # save the lane point 
+        self.histograms_peaks[self.height].append(x)
+    
+        # Update visualization on both histogram and image
+        self.visualize_point_on_image(x, self.height)
 
     def on_click(self, event):
         """Handle mouse clicks on the histogram plot"""
         if event.xdata is None or event.ydata is None:
+            return
+        
+        if self.flag_click_is_the_peak: 
+            self.make_click_a_peak(event)
+            self.flag_click_is_the_peak = False
             return
         
         x = int(event.xdata) # width 
@@ -250,6 +269,9 @@ class LanePeakLabeler:
         elif event.key == '!': # Terminate 
             print(">>> Exiting...")
             exit(1)
+        
+        elif event.key == 'c': # Click is the peak
+            self.flag_click_is_the_peak = True
 
     def visualize_hist_peaks(self):
         for peaks in self.histograms_peaks[self.height]:
@@ -359,6 +381,7 @@ def main():
     print(">>> Press 'r' to REMOVE the previous click,")
     print(">>> Press 'd' to DELETE the detected last peak,")
     print(">>> Press 'q' to SKIP THIS FRAME.") 
+    print(">>> Press 'c' and click to add a peak at that point.") 
     print(">>> Press '!' to terminate the program.")
     print("\n------ For classifing points into lanes: ------")
     print("Press '1-9' to select lane number")
@@ -380,7 +403,7 @@ def main():
     video_path = "video_repository/real_roads/IMG_2944.mp4"
     video_path = "video_repository/real_roads/IMG_2893.mp4"
     video_path = "video_repository/real_roads/IMG_2892.mp4"
-    video_path = "video_repository/real_roads/IMG_2891.mp4"
+    # video_path = "video_repository/real_roads/IMG_2891.mp4"     # DONE
     # video_path = "video_repository/real_roads/IMG_2890.mp4"     # DONE
     # video_path = "video_repository/real_roads/IMG_2889.mp4"     # DONE
     # video_path = "video_repository/real_world.mp4"              # DONE 
