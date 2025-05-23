@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import cv2
 import matplotlib
 matplotlib.use('TkAgg')  # Use TkAgg backend for interactive plotting
+from detect import LaneDetection
 
 
 class LanePeakLabeler:
@@ -35,6 +36,7 @@ class LanePeakLabeler:
         
         # Initialize data structures
         self.histograms_peaks = {}  # Key: slice height, Value: list of widths 
+        self.LD_peaks = {}
         self.lanes = None # store lists of lane points depending on the self.max_lanes 
 
         # Helpful variables
@@ -43,6 +45,7 @@ class LanePeakLabeler:
         self.flag_go_back = False
         self.flag_skip_this_frame = False
         self.flag_click_is_the_peak = False
+        self.LD = None
 
     def start_labeling(self):
         # load the source [image or frame of a video (repeat for every frame)]
@@ -51,12 +54,21 @@ class LanePeakLabeler:
             frame = cv2.cvtColor(self.src, cv2.COLOR_BGR2GRAY)
             self.compute_heights_of_histogram(frame.shape[0])
 
+            self.find_peaks_using_lanedetection()
+            if self.flag_skip_this_frame:
+                self.flag_skip_this_frame = False
+                continue
+
             # In a while loop cause we need to change self.height when the user goes back (to the previous slice)
             # bottom > top --->  step < 0
             self.height = self.bottom_row_index
             while self.height > self.top_row_index - 1:
                 self.clicks = [] # reset the clicks for each slice
-                self.histograms_peaks[self.height] = [] # init for this slice
+                if self.height in self.LD_peaks.keys():
+                    self.histograms_peaks[self.height] = self.LD_peaks[self.height] 
+                else : 
+                    self.histograms_peaks[self.height] = [] 
+                # self.histograms_peaks[self.height] = [] # init for this slice
                 
                 self.visualized_frame = self.src.copy()
                 self.histogram = [int(x) for x in frame[self.height]]
@@ -89,14 +101,65 @@ class LanePeakLabeler:
             self.visualize_lane_points(image_for_saving, self.lanes)
 
             self.reset_params() 
+            cv2.destroyAllWindows()
 
+    def find_peaks_using_lanedetection(self):
+        """Phase 1: Find peaks using Ld and let user accept or discard them."""
+        lanes, points = self.LD.lanes_detection(self.src.copy())
+        
+        img = self.src.copy() 
+
+        def wait_for_key():
+            while True:
+                key = cv2.waitKey(0)
+                if key == -1:
+                    continue
+                key_char = chr(key & 0xFF)  # convert to character
+                if  key_char == 'y':
+                    return False, True
+                elif key_char == 'n':
+                    return False, False
+                elif key_char == 'q': 
+                    self.flag_skip_this_frame = True
+                    return True, False 
+                elif key_char == '0':
+                    print(">>> Continue withoud Auto-Detection")
+                    return True, True 
+                elif key_char == '!':
+                    print(">>> Exiting...")
+                    exit(1)
+        for point in points : 
+            cv2.circle(img, (point[0], point[1]), 5, (0,0,0), -1)
+
+        for point in points: 
+            printable_img = img.copy() 
+            x, y = point[0], point[1] 
+            cv2.circle(printable_img, (x, y), 18, (0, 0, 255), 4)
+            cv2.imshow("LD CHECK", printable_img)
+            exit, accept = wait_for_key()
+
+            if exit : 
+                # if accept : 
+                    # cv2.destroyWindow("LD CHECK")
+                return 
+            if accept : 
+                cv2.circle(img, (x, y), 6, (0,255,0), -1)
+                if y in self.LD_peaks.keys() : 
+                    self.LD_peaks[y].append(x)
+                else :
+                    self.LD_peaks[y] = [x] 
+            else : 
+                cv2.circle(img, (x, y), 6, (0,0,0), -1)
+        cv2.destroyWindow("LD CHECK")
+    
     def reset_params(self):
         self.histograms_peaks = {}
         self.lanes = None
         self.flag_go_back = False
+        self.LD_peaks = {}
 
     def classify_into_lanes(self):
-        """Phase 2: Classify detected points into lanes"""
+        """Phase 3: Classify detected points into lanes"""
         
         
         def wait_for_key():
@@ -155,16 +218,19 @@ class LanePeakLabeler:
             i = 0 
             if flag_previous_height: 
                 flag_previous_height = False
-                height = height - self.step if height < self.bottom_row_index else self.bottom_row_index
+                height = height - self.step 
+                if height > self.bottom_row_index :
+                    height = self.bottom_row_index
                 i = len(self.histograms_peaks[height]) - 1
                 flag_run = True 
                 while i < 0 and flag_run: 
                     height = height - self.step 
-                    i = len(self.histograms_peaks[height]) - 1
                     if height > self.bottom_row_index: 
                         flag_run = False
                         height = self.bottom_row_index
                         i = 0
+                    else : 
+                        i = len(self.histograms_peaks[height]) - 1
             else : 
                 height += self.step 
 
@@ -265,6 +331,7 @@ class LanePeakLabeler:
         elif event.key == 'q':  # Quit and save
             plt.close()
             self.flag_skip_this_frame = True
+            cv2.destroyWindow("src")
         
         elif event.key == '!': # Terminate 
             print(">>> Exiting...")
@@ -280,12 +347,13 @@ class LanePeakLabeler:
             cv2.imshow("src", self.src)
             cv2.waitKey(1)
 
-    def visualize_point_on_image(self, peak_x, current_height):
+    def visualize_point_on_image(self, peak_x, current_height, show_plt = True):
         cv2.circle(self.visualized_frame, (peak_x, current_height), 3, (230, 216, 173), 3)
         cv2.imshow("src", self.visualized_frame)
         cv2.waitKey(1)
         plt.plot(peak_x, self.histogram[peak_x], 'go', markersize=8)
-        plt.show()  
+        if show_plt :
+            plt.show()  
 
     def visulize_deleted_peak(self, peak_x, current_height):
         cv2.circle(self.visualized_frame, (peak_x, current_height), 3, (0, 0, 0), 3)
@@ -311,10 +379,6 @@ class LanePeakLabeler:
         i = (height - self.bottom_row_index)// self.step % len(self.colours)
         color = (self.colours[i][2]/255, self.colours[i][1]/255, self.colours[i][0]/255)
         img = cv2.line(img, (0,height), (img.shape[1],height), self.colours[i]) 
-
-        cv2.imshow("src", img)
-        cv2.waitKey(1)
-        
         plt.figure(figsize=(15, 5))
         plt.plot(list(range(img.shape[1])), self.histogram , color=color)
         plt.xlabel('Width')
@@ -323,6 +387,12 @@ class LanePeakLabeler:
         # Connect the click & key event 
         plt.gcf().canvas.mpl_connect('button_press_event', self.on_click)
         plt.gcf().canvas.mpl_connect('key_press_event', self.on_key)
+
+        for point in self.histograms_peaks[height] : 
+            self.visualize_point_on_image(point, height, False)
+
+        cv2.imshow("src", img)
+        cv2.waitKey(1)
         plt.show()
         # plt.clf()
 
@@ -340,13 +410,16 @@ class LanePeakLabeler:
         if self.image_path:
             self.src = cv2.imread(self.image_path)
             self.image_path = None
-            
+            self.LD = LaneDetection(src.shape[1], src.shape[0], "455", None)
+
         elif self.video_path:
             # offset for the first frame
             # initialize video capture
             if self.cap is None:
                 self.cap = cv2.VideoCapture(self.video_path)
                 ret, src = self.cap.read()
+                self.LD = LaneDetection(int(src.shape[1]), int(src.shape[0] ), "455", None)
+
                 for _ in range(self.skip_first_frames - 1):
                     ret, src = self.cap.read()
                 if not ret:
@@ -364,6 +437,7 @@ class LanePeakLabeler:
                         self.cap = None
                         self.video_path = None
                         return False 
+            # src = cv2.resize(src, dsize=None, fx=0.5, fy=0.5)
             self.src = src
         else : 
             return False 
@@ -375,6 +449,15 @@ class LanePeakLabeler:
 
 
 def main():
+    print(">>> PHASE #1 : Detect peaks using LD ----------")
+    print("----------- Lane Detection checking -----------")
+    print(">>> Press 'y' to ACCEPT the detected peak,")
+    print(">>> Press 'n' to DISMISS the detected peak,")
+    print(">>> Press '0' to CONTINUE without auto-detection,")
+    print(">>> Press 'q' to SKIP THIS FRAME.")
+    print(">>> Press '!' to terminate the program.")
+
+    print("\n>>> PHASE #2 : Detect points by hand ----------")
     print("----------- Lane Peak Labeling Tool -----------")
     print(">>> Press 'n' or ' ' to go to the NEXT slice,")
     print(">>> Press 'b' to go BACK to the PREVIOUS slice,")
@@ -383,26 +466,37 @@ def main():
     print(">>> Press 'q' to SKIP THIS FRAME.") 
     print(">>> Press 'c' and click to add a peak at that point.") 
     print(">>> Press '!' to terminate the program.")
-    print("\n------ For classifing points into lanes: ------")
+
+    print("\n>>> PHASE #3 : Classify points into lanes -----")
     print("Press '1-9' to select lane number")
     print("Press 'n' to go to the NEXT point")
     print("Press 'b' to go BACK to the PREVIOUS point")
     print()
     # Change these paths as needed
+    # MUST HAVE
     video_path = "video_repository/real_roads/IMG_2997.mp4"
+    # Interesting video
     video_path = "video_repository/real_roads/IMG_2988.mp4"
+    # Interesting video
     video_path = "video_repository/real_roads/IMG_2987.mp4"
+    # SO SO 
     video_path = "video_repository/real_roads/IMG_2986.mp4"
+    # NO GOOD 
     video_path = "video_repository/real_roads/IMG_2985.mp4"
+    # Highway Thessaloniki
     video_path = "video_repository/real_roads/IMG_2984.mp4"
+    # THIS IS GOOD 
     video_path = "video_repository/real_roads/IMG_2983.mp4"
+    # THIS IS GOOD 
     video_path = "video_repository/real_roads/IMG_2951.mp4"
+    # THIS IS GOOD 
     video_path = "video_repository/real_roads/IMG_2950.mp4"
+    # Highway from thessaloniki to Alexandroupoli
     video_path = "video_repository/real_roads/IMG_2948.mp4"
     video_path = "video_repository/real_roads/IMG_2946.mp4"
     video_path = "video_repository/real_roads/IMG_2944.mp4"
-    video_path = "video_repository/real_roads/IMG_2893.mp4"
-    video_path = "video_repository/real_roads/IMG_2892.mp4"
+    # video_path = "video_repository/real_roads/IMG_2893.mp4"     # Almost DONE
+    # video_path = "video_repository/real_roads/IMG_2892.mp4"     # Almost DONE
     # video_path = "video_repository/real_roads/IMG_2891.mp4"     # DONE
     # video_path = "video_repository/real_roads/IMG_2890.mp4"     # DONE
     # video_path = "video_repository/real_roads/IMG_2889.mp4"     # DONE
