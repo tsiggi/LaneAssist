@@ -80,3 +80,51 @@ def load_annotated_data(base_dir="lane_anotation_dataset"):
     
     print(f"Loaded {len(all_data)} annotated samples")
     return all_data
+
+
+# Convert the raw_points from dict of lists to a dict of dicts with key the width and value the lane_number
+if __name__ == "__main__":
+    base_dir="lane_anotation_dataset"
+    
+    data_dir = os.path.join(base_dir, "images")
+    labels_dir = os.path.join(base_dir, "labels")
+    
+    # Get all label files
+    label_files = [f for f in os.listdir(labels_dir) if f.endswith('.pkl')]
+    
+    for label_file in label_files:
+        # Load the label data
+        with open(os.path.join(labels_dir, label_file), 'rb') as f:
+            data = pickle.load(f)
+        
+        if "points_with_lanes" in data:
+            # print(f"Warning: Image {data['image_filename']} already has points with lanes")
+            continue
+        print(f">>> Warning: Image {data['image_filename']} DOES NOT HAVE points with lanes. Creating ...", end=" ")
+        
+        # Now that the data is loaded, change the raw_points and save them
+        points_with_lanes = {}
+        
+        # print(data['lanes'])
+        # print(data['raw_lane_points'])
+        for i in data['raw_lane_points'].keys():
+            points_with_lanes[i] = {}
+            # i is the height 
+            for j in data['raw_lane_points'][i]:
+                # j is the width
+                # find the lane number of point (height=i,width=j) 
+                lane_num = None
+                for k in range(len(data['lanes'])):
+                    if (j, i) in data['lanes'][k]:
+                        lane_num = k
+                        break
+                if lane_num is not None:
+                    points_with_lanes[i][j] = lane_num
+        # print(f"POINTS WITH LANES \n {points_with_lanes}")
+        data['points_with_lanes'] = points_with_lanes
+        # Save the data
+        with open(os.path.join(labels_dir, label_file), 'wb') as f:
+            pickle.dump(data, f)
+
+        print(f"Done! Labels updated successfully and saved in {label_file}") 
+       
