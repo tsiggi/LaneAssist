@@ -3,6 +3,47 @@ import os
 import pickle
 from datetime import datetime
 
+def save_image(image, output_dir="lane_annotation_dataset", filename=None):
+    # Create directories if they don't exist
+    images_dir = os.path.join(output_dir, "images")
+    for directory in [output_dir, images_dir]:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    
+    # Create a timestamp for unique filenames if no filename is provided
+    if filename is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"image_{timestamp}.jpg"
+    
+    # Save the image
+    image_path = os.path.join(images_dir, filename)
+    cv2.imwrite(image_path, image)
+    
+    return image_path
+
+def save_labels(img_filename, lane_points, step, hists_num, output_dir="lane_annotation_dataset", filename=None):
+    # Create directories if they don't exist
+    labels_dir = os.path.join(output_dir, "labels")
+    if not os.path.exists(labels_dir):
+        os.makedirs(labels_dir)
+
+    if filename is None: 
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = os.path.join(labels_dir, f"lane_data_{timestamp}.pkl")
+    else: 
+        filename = os.path.join(labels_dir, filename)
+    
+    data = {
+        'image_filename': img_filename,
+        'lane_points': lane_points,
+        'step': step,
+        'hists_num': hists_num,
+    }
+    
+    with open(filename, 'wb') as f:
+        pickle.dump(data, f)
+    
+    return filename
 
 def save_annotated_data(image, lane_points, lane_assignments, output_dir="lane_annotation_dataset"):
     """
@@ -71,9 +112,11 @@ def load_annotated_data(base_dir="lane_anotation_dataset"):
             
             # Add to our dataset
             all_data.append({
+                'image_filename': data['image_filename'],
                 'image': image,
                 'lanes': data['lanes'],
-                'raw_points': data['raw_lane_points']
+                'raw_points': data['raw_lane_points'], 
+                'points_with_lanes': data['points_with_lanes'] if 'points_with_lanes' in data else None
             })
         else:
             print(f"Warning: Image {image_path} not found")
